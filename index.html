@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartNurse</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding-bottom: 40px;
+    background: #020617;
+    color: #f8fafc;
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    width: 100%;
+    max-width: 850px;
+    margin: auto;
+    padding: 15px;
+}
+
+.card {
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 15px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    margin: 0;
+    color: #3b82f6;
+    font-size: 23px;
+    font-weight: 900;
+}
+
+.logo span {
+    color: white;
+    font-size: 14px;
+    font-weight: normal;
+}
+
+.subtitle {
+    margin-top: 5px;
+    color: #7dd3fc;
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+.countdown {
+    color: #fb923c;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.coach {
+    border-color: #2563eb;
+}
+
+.coach-title {
+    color: #60a5fa;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+.coach-message {
+    color: #cbd5e1;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.warning {
+    border-color: #ef4444;
+    box-shadow: 0 0 20px rgba(239, 68, 68, .25);
+}
+
+.timer {
+    text-align: center;
+}
+
+.timer-display {
+    font-size: 60px;
+    font-weight: 900;
+    margin: 10px 0 20px;
+}
+
+button {
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.timer-button {
+    background: #059669;
+    padding: 13px 30px;
+    border-radius: 14px;
+}
+
+.reset-button {
+    background: #1e293b;
+    padding: 13px 17px;
+    border-radius: 14px;
+    margin-left: 7px;
+}
+
+.section-title {
+    font-size: 14px;
+    letter-spacing: 2px;
+}
+
+.task {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #0b1724;
+    border-left: 4px solid #10b981;
+    border-radius: 14px;
+    padding: 15px;
+    margin-top: 10px;
+}
+
+.task.dershane {
+    border-left-color: #ef4444;
+}
+
+.task.completed {
+    opacity: .35;
+}
+
+.task.completed .task-name {
+    text-decoration: line-through;
+}
+
+.task-time {
+    color: #64748b;
+    font-size: 10px;
+}
+
+.task-name {
+    margin-top: 5px;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.finish {
+    background: #2563eb;
+    padding: 9px 15px;
+    border-radius: 11px;
+    font-size: 10px;
+}
+
+.recovery {
+    display: none;
+    gap: 8px;
+    margin-top: 15px;
+}
+
+.recovery button {
+    flex: 1;
+    background: #2563eb;
+    border-radius: 12px;
+    padding: 11px;
+    font-size: 11px;
+}
+
+.recovery button:last-child {
+    background: #1e293b;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- ÜST KISIM -->
+    <div class="card header">
+
+        <div>
+            <h1 class="logo">
+                SmartNurse
+                <span>Pro</span>
+            </h1>
+
+            <div class="subtitle">
+                HACETTEPE HEMŞİRELİK
+            </div>
+        </div>
+
+        <div id="countdown" class="countdown">
+            ...
+        </div>
+
+    </div>
+
+
+    <!-- KOÇ -->
+    <div id="coach" class="card coach">
+
+        <div class="coach-title">
+            🤖 YAPAY ZEKA KOÇU
+        </div>
+
+        <p id="coachMessage" class="coach-message"></p>
+
+        <div id="recoveryButtons" class="recovery">
+
+            <button onclick="recovery('today')">
+                BUGÜNÜ KURTAR
+            </button>
+
+            <button onclick="recovery('tomorrow')">
+                YARINA PLANLA
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- POMODORO -->
+    <div class="card timer">
+
+        <div id="timerDisplay" class="timer-display">
+            25:00
+        </div>
+
+        <button
+            id="timerButton"
+            class="timer-button"
+            onclick="timerAction()">
+            BAŞLAT
+        </button>
+
+        <button
+            class="reset-button"
+            onclick="resetTimer()">
+            ↻
+        </button>
+
+    </div>
+
+
+    <!-- GÜNLÜK PROGRAM -->
+    <div class="card">
+
+        <div class="section-title">
+            📋 GÜNLÜK AKIŞ
+        </div>
+
+        <div id="schedule"></div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+/* -------------------------
+   TARİH VE GÜN
+------------------------- */
+
+const today = new Date();
+
+const todayString = today.toDateString();
+
+const dayNumber = today.getDay();
+
+
+/* -------------------------
+   GÜNLÜK PLAN
+------------------------- */
+
+const plans = {
+
+    1: [
+        {
+            time: "09:00 - 13:00",
+            name: "🏫 DERSHANE: Fizik / Biyo / Mat 1",
+            type: "dershane"
+        },
+        {
+            time: "15:00 - 18:00",
+            name: "🧬 Biyoloji Tekrar",
+            type: "study"
+        }
+    ],
+
+    2: [
+        {
+            time: "09:00 - 12:10",
+            name: "🏫 DERSHANE: Mat 2 / Geo",
+            type: "dershane"
+        },
+        {
+            time: "14:00 - 17:00",
+            name: "📐 Geometri Odak",
+            type: "study"
+        }
+    ],
+
+    3: [
+        {
+            time: "10:40 - 13:50",
+            name: "🏫 DERSHANE: Kimya / Fizik",
+            type: "dershane"
+        },
+        {
+            time: "15:30 - 18:30",
+            name: "🧪 Kimya Tekrar",
+            type: "study"
+        }
+    ],
+
+    4: [
+        {
+            time: "09:00 - 13:00",
+            name: "🏫 DERSHANE: Türkçe / Mat 1",
+            type: "dershane"
+        },
+        {
+            time: "15:00 - 18:30",
+            name: "🔢 Mat 1 Problemler",
+            type: "study"
+        }
+    ],
+
+    5: [
+        {
+            time: "09:00 - 12:00",
+            name: "🧬 Biyoloji: Sistemler",
+            type: "study"
+        },
+        {
+            time: "14:00 - 17:00",
+            name: "📉 Fizik: Hareket",
+            type: "study"
+        }
+    ],
+
+    6: [
+        {
+            time: "09:30 - 13:00",
+            name: "📝 TYT GENEL DENEME",
+            type: "study"
+        }
+    ],
+
+    0: [
+        {
+            time: "10:00 - 13:00",
+            name: "🧹 Eksik Kapatma & Telafi",
+            type: "study"
+        }
+    ]
+
+};
+
+
+/* -------------------------
+   GÖREVLER
+------------------------- */
+
+const storageKey =
+    "smartnurse_done_" + todayString;
+
+let completedTasks =
+    JSON.parse(localStorage.getItem(storageKey) || "[]");
+
+
+const schedule =
+    document.getElementById("schedule");
+
+const todayPlan =
+    plans[dayNumber] || plans[1];
+
+
+todayPlan.forEach(function(task, index) {
+
+    const id =
+        dayNumber + "-" + index;
+
+    const completed =
+        completedTasks.includes(id);
+
+    const taskElement =
+        document.createElement("div");
+
+    taskElement.className =
+        "task " +
+        task.type +
+        (completed ? " completed" : "");
+
+    taskElement.innerHTML = `
+
+        <div>
+
+            <div class="task-time">
+                ${task.time}
+            </div>
+
+            <div class="task-name">
+                ${task.name}
+            </div>
+
+        </div>
+
+        <button
+            class="finish"
+            onclick="finishTask('${id}')">
+
+            BİTİR
+
+        </button>
+
+    `;
+
+    schedule.appendChild(taskElement);
+
+});
+
+
+/* -------------------------
+   GÖREV TAMAMLAMA
+------------------------- */
+
+function finishTask(id) {
+
+    if (!completedTasks.includes(id)) {
+
+        completedTasks.push(id);
+
+    }
+
+    localStorage.setItem(
+        storageKey,
+        JSON.stringify(completedTasks)
+    );
+
+    localStorage.setItem(
+        "smartnurse_last",
+        todayString
+    );
+
+    location.reload();
+
+}
+
+
+/* -------------------------
+   KOÇ
+------------------------- */
+
+const lastEntry =
+    localStorage.getItem("smartnurse_last");
+
+const coach =
+    document.getElementById("coach");
+
+const message =
+    document.getElementById("coachMessage");
+
+const recoveryButtons =
+    document.getElementById("recoveryButtons");
+
+
+if (
+    lastEntry &&
+    lastEntry !== todayString &&
+    completedTasks.length === 0
+) {
+
+    coach.classList.add("warning");
+
+    message.innerHTML = `
+        <b style="color:#f87171">
+            🚨 DİKKAT KRAL!
+        </b>
+        <br><br>
+        Bugünkü programa henüz başlamadın.
+        Hedefe ulaşmak için bugün küçük de olsa
+        bir adım atalım.
+    `;
+
+    recoveryButtons.style.display = "flex";
+
+} else {
+
+    message.innerText =
+        "Kral, düzenli devam. Her tamamladığın görev Hacettepe hedefinde bir adım daha.";
+
+}
+
+
+/* -------------------------
+   TELAFİ
+------------------------- */
+
+function recovery(type) {
+
+    if (type === "today") {
+
+        alert(
+            "Bugün için telafi modu açıldı. +2 Pomodoro hedefle."
+        );
+
+    } else {
+
+        alert(
+            "Yarın için telafi planı oluşturuldu."
+        );
+
+    }
+
+}
+
+
+/* -------------------------
+   POMODORO
+------------------------- */
+
+let remainingSeconds = 25 * 60;
+
+let timer = null;
+
+
+function updateTimer() {
+
+    const minutes =
+        Math.floor(remainingSeconds / 60);
+
+    const seconds =
+        remainingSeconds % 60;
+
+    document.getElementById("timerDisplay")
+        .innerText =
+        minutes +
+        ":" +
+        (seconds < 10 ? "0" : "") +
+        seconds;
+
+}
+
+
+function timerAction() {
+
+    const button =
+        document.getElementById("timerButton");
+
+
+    if (timer) {
+
+        clearInterval(timer);
+
+        timer = null;
+
+        button.innerText = "BAŞLAT";
+
+        return;
+
+    }
+
+
+    button.innerText = "DURDUR";
+
+
+    timer = setInterval(function() {
+
+        remainingSeconds--;
+
+        updateTimer();
+
+
+        if (remainingSeconds <= 0) {
+
+            clearInterval(timer);
+
+            timer = null;
+
+            button.innerText = "BAŞLAT";
+
+            alert(
+                "Süre bitti kral. Şimdi kısa bir mola."
+            );
+
+        }
+
+    }, 1000);
+
+}
+
+
+function resetTimer() {
+
+    clearInterval(timer);
+
+    timer = null;
+
+    remainingSeconds = 25 * 60;
+
+    updateTimer();
+
+    document.getElementById("timerButton")
+        .innerText = "BAŞLAT";
+
+}
+
+
+/* -------------------------
+   YKS SAYACI
+------------------------- */
+
+function updateCountdown() {
+
+    const examDate =
+        new Date("2027-06-20T00:00:00");
+
+    const now =
+        new Date();
+
+    const difference =
+        examDate - now;
+
+    const days =
+        Math.ceil(
+            difference / (1000 * 60 * 60 * 24)
+        );
+
+
+    document.getElementById("countdown")
+        .innerText =
+        Math.max(days, 0) + " GÜN KALDI";
+
+}
+
+
+updateCountdown();
+
+setInterval(
+    updateCountdown,
+    60000
+);
+
+</script>
+
+</body>
+</html>
